@@ -1,43 +1,44 @@
 var user = {
   totalCash: 100,
 }
-var gameTime = 10000;
+
+// How long do you want to play?
+var gameTime = 300000;
+
+// Is time up?
 var timeout = false;
+// Time counter
 var totalTime = 0;
 
-var apple = new Fruit('apple', 2.50);
-var orange = new Fruit('orange', 0.50);
-var banana = new Fruit('banana', 1.00);
+var apple = new Fruit('apple', 5.00);
+var orange = new Fruit('orange', 5.00);
+var banana = new Fruit('banana', 5.00);
 // var grapes = new Fruit('grapes', 7.50);
-var pear = new Fruit('pear', 4.00);
+var pear = new Fruit('pear', 5.00);
 
 var fruitArray = [apple, orange, banana, pear];
 
 setInterval(function() {
   if (!timeout){
-    totalTime += 1
-    console.log("Seconds elapsed: ", totalTime);
-    console.log("Time to go: ", (gameTime /1000) - totalTime);
+    totalTime += 1;
+    //console.log("Seconds elapsed: ", totalTime);
+    $(".remaining").text( (gameTime /1000) - totalTime );
   }
 }, 1000);
 
 setInterval(function() {
   if (!timeout) {
-    // apple.changePrice();
-    // orange.changePrice();
-    // banana.changePrice();
-    // grapes.changePrice();
-    // pear.changePrice();
   for (var i = 0; i < fruitArray.length; i++) {
     fruitArray[i].changePrice();
   }
 
   }
-}, 2000);
+}, 15000);
 
+// This function will end the game
 window.setTimeout(function(){
   timeout = true;
-  console.log("game over");
+ 
   for (var i = 0; i < fruitArray.length; i++) {
     if (user[fruitArray[i].name]) {
       while (user[fruitArray[i].name].inventory > 0) {
@@ -45,16 +46,14 @@ window.setTimeout(function(){
       }
     }
   }
-  console.log("Your final cash total: ", user.totalCash.toFixed(2));
+ alert("Game over!!\nYour final cash total: $" + user.totalCash.toFixed(2));
   // remove buy /sell buttons
 }, gameTime);
 
 $(document).ready(function(){
-  // apple.changePrice();
-  // orange.changePrice();
-  // banana.changePrice();
-  // grapes.changePrice();
-  // pear.changePrice();
+  // Print initial time remaining to dom
+  $(".remaining").text(gameTime/1000);
+
   for (var i = 0; i < fruitArray.length; i++) {
     fruitArray[i].changePrice();
   }
@@ -73,18 +72,30 @@ $(document).ready(function(){
     }
   });
   // listen to sell fruit
+  $(".sell").on('click', function(){
+    if(!timeout) {
+      var buttonClass = $(this).parent().attr('class');
+      // Because fruit-stand always ends with 6 characters
+      buttonClass = buttonClass.substring(0, buttonClass.length - 6);
+      for (var i = 0; i < fruitArray.length; i++) {
+        if (buttonClass == fruitArray[i].name) {
+          sellFruit(user, fruitArray[i]);
+        }
+      }
+    }
+  });
 
 });
 
-function sellFruit(user, purchase) {
-  if (!user[purchase.name] || user[purchase.name].inventory <= 0) {
+function sellFruit(user, sold) {
+  if (!user[sold.name] || user[sold.name].inventory <= 0) {
       console.log('try again');
       return false;
     } else {
-      user.totalCash += purchase.price;
+      user.totalCash += sold.price;
     }
 
-  user[purchase.name].inventory--;
+  user[sold.name].inventory--;
 
   updateCash(user);
   return true;
@@ -124,10 +135,17 @@ function Fruit(name, price) {
   this.price = parseFloat(price);
 
   this.changePrice = function() {
-    this.price += randomNumber(-50, 50) / 100;
-    this.price = Math.round(this.price*100) / 100;
-    if (this.price > 9.99 || this.price < 0.50){
-      this.changePrice();
+    if (this.price - .5 < 0.5) {
+      var lowerBound = (this.price * 100) - 50;
+      this.price += randomNumber(lowerBound, 50) / 100;
+      this.price = Math.round(this.price*100) / 100;
+    } else if (this.price + .5 > 9.99) {
+      var upperBound = 999 - ((this.price) * 100);
+      this.price += randomNumber(-50, upperBound) / 100;
+      this.price = Math.round(this.price*100) / 100;
+    } else {
+      this.price += randomNumber(-50, 50) / 100;
+      this.price = Math.round(this.price*100) / 100;
     }
     updateDomPrice(this);
   }
@@ -139,7 +157,8 @@ function updateCash(user) {
   //print inventory
   for (key in user) {
     if (key != 'totalCash') {
-      $('.user-' + key).text(user[key].inventory + " avg price: " + user[key].avgPrice.toFixed(2));
+      $('.user-' + key).text(user[key].inventory);
+      $('.avg-' + key).text("avg price: " + user[key].avgPrice.toFixed(2));
     }
   }
 }
@@ -147,10 +166,10 @@ function updateCash(user) {
 function updateDomPrice(fruit) {
   //this is a placeholder
   $el = $("."+fruit.name.toString());
-  $el.text("$" + fruit.price);
+  $el.text("$" + fruit.price.toFixed(2));
 }
 
 
 function randomNumber(min, max) {
-	return Math.floor(Math.random() * (1 + max - min) + min);
+  return Math.floor(Math.random() * (1 + max - min) + min);
 }
